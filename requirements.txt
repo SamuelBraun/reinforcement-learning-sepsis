@@ -1,0 +1,23 @@
+# RL Sepsis Project — Python 3.12
+# Install with:  pip install -r requirements.txt
+
+# Core scientific stack
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+
+# Plotting
+matplotlib>=3.8
+seaborn>=0.13
+
+# RL environment
+gymnasium>=0.29
+icu-sepsis>=1.0
+
+# Deep RL (Config B — continuous 47-dim observations)
+torch>=2.2
+stable-baselines3>=2.3
+
+# Notebook runtime
+jupyter>=1.0
+ipykernel>=6.29
