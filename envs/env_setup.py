@@ -1,8 +1,9 @@
 """
-env_setup.py — Environment Setup & Shared Helpers
-==================================================
-Constants, the ICU-Sepsis environment factory, and the plotting / evaluation
-helpers shared across all Config A algorithms.
+env_setup.py — Environment Setup
+================================
+Shared constants and the ICU-Sepsis environment factory used across both
+configurations. Evaluation and plotting helpers live in the notebook itself,
+next to the sections that use them.
 
 Contents
 --------
