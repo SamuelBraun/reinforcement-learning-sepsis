@@ -93,13 +93,13 @@ The explanation runs as follows. With $Q$ initialised to zero, $\epsilon = 0$ pi
 \label{fig:configB-floor}
 \end{figure}
 
-\paragraph{Linear Q-learning collapses to a single action.} The Linear-Q training curve climbs from the random baseline (0.559) to a final snapshot return of 0.685 within 40{,}000 environment steps and stays perfectly flat thereafter. All three seeds collapse onto an identical asymptote, with the across-seed standard deviation vanishing after step 40{,}000. The action heatmap (\Cref{fig:configB-policies}) reveals the cause: 100\% of Linear-Q's on-policy state visits select action (V=none, F=none). The agent has converged to a constant policy.
+\paragraph{Both Linear-Q variants collapse to a single action.} Naive Linear-Q's training curve climbs from the random baseline (0.559) to 0.685 within 40{,}000 environment steps and stays perfectly flat thereafter. All three seeds collapse onto an identical asymptote. RFF Linear-Q oscillates between 0.59 and 0.68 across the budget; the across-seed band is wide and unstable. Both deploy to nearly identical policies in the action heatmap (\Cref{fig:configB-policies}): naive Linear-Q places 100\% of visits at (V=none, F=none); RFF Linear-Q places 96\%, with the remaining 4\% spread across unrelated cells that do not respond to severity.
 
-This is not a tie-breaking artefact. The weights are initialised from $\mathcal{N}(0, 0.01^2)$ precisely to give different actions different initial $Q$-values, and three seeds with different initial $W$ still converge to the same single-action policy. The fixed point is robust to initialisation. The reason is representational: the linear functional form $Q(s,a) = W[a] \cdot x + b[a]$ cannot express the multi-modal optimal policy of this MDP, and under the bootstrapped target the linear fit settles on the constant policy that is closest to optimal in mean-return terms. Section \ref{sec:evaluation-A} provides the analytical justification: the always-action-0 policy reaches 92\% of $J^*$ on the clean MDP, so the TD updates have weak incentive to escape it.
+This is not a tie-breaking artefact. Weights are initialised from $\mathcal{N}(0, 0.01^2)$ to break argmax ties, and three seeds with different initial weights converge to the same attractor for both representations. The RFF result refines the initial hypothesis. Linear-Q's failure is not representational in the narrow sense of "the linear functional form cannot express the optimum"; even a 5x richer linear-in-features class (256-dim RBF approximation) still collapses. The basin of always-action-0 is a structural property of the MDP's loss landscape under TD. Section \ref{sec:evaluation-A} provides the analytical justification: the always-action-0 policy reaches 92\% of $J^*$ on the clean MDP, so the gradient signal pointing away from it is weak regardless of the feature space.
 
 \paragraph{DQN learns a non-degenerate policy with reduced oscillation after tuning.} The tuned DQN curve oscillates within roughly 0.55 to 0.65 across the 300{,}000-step budget, but the dynamics are visibly smoother than the original 150{,}000-step run at default hyperparameters. The mean snapshot return shows a clear upward trend after the first 100{,}000 steps and ends at $\sim 0.62$ across three seeds. Soft target updates and the five-times-smaller learning rate together remove a major source of training instability. The deployed best-snapshot model reaches 68.1\% survival and mean return 0.640, compared to 67.4\% and 0.608 at the original 150{,}000-step setup.
 
-\Cref{tab:configB-results} reports the Configuration B comparison. Mean returns rank Linear-Q (0.666) above DQN (0.640) above random (0.559), while survival ranks DQN (68.1\%) above Linear-Q (66.6\%) above random (65.0\%). The two metrics still disagree, but the gap narrowed once DQN was properly tuned.
+\Cref{tab:configB-results} reports the Configuration B comparison. Mean returns rank Linear-Q-raw (0.666) above Linear-Q-RFF (0.665) above DQN (0.640) above random (0.559); survival ranks DQN (68.1\%) above Linear-Q-RFF (66.7\%) above Linear-Q-raw (66.6\%) above random (65.0\%). The two Linear-Q variants are statistically indistinguishable on both metrics; the deep approximator is the only one that meaningfully exceeds the linear floor.
 
 \begin{table}[!htbp]
 \centering
@@ -108,9 +108,10 @@ This is not a tie-breaking artefact. The weights are initialised from $\mathcal{
 \toprule
 Algorithm & Mean return $\pm$ std & Survival \% [95\% CI] & Mean episode length & Convergence to 90\% of best \\
 \midrule
-Random   & $0.559 \pm 0.477$ & $65.0$ $[61.9, 68.2]$ & $9.2$ & n/a \\
-Linear-Q & $0.666 \pm 0.472$ & $66.6$ $[63.7, 69.7]$ & $9.3$ & $40{,}000$ steps \\
-DQN      & $0.640 \pm 0.467$ & $68.1$ $[65.2, 70.8]$ & $9.3$ & not reached \\
+Random            & $0.559 \pm 0.477$ & $65.0$ $[61.9, 68.2]$ & $9.2$ & n/a \\
+Linear-Q (raw)    & $0.666 \pm 0.472$ & $66.6$ $[63.7, 69.7]$ & $9.3$ & $40{,}000$ steps \\
+Linear-Q (RFF)    & $0.665 \pm 0.471$ & $66.7$ $[63.6, 69.5]$ & $8.8$ & $150{,}000$ steps \\
+DQN               & $0.640 \pm 0.467$ & $68.1$ $[65.2, 70.8]$ & $9.3$ & not reached \\
 \bottomrule
 \end{tabular}
 \caption{Configuration B: per-agent performance on the clinical environment (1{,}000 evaluation episodes, fixed seed 42).}
