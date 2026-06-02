@@ -97,9 +97,9 @@ The explanation runs as follows. With $Q$ initialised to zero, $\epsilon = 0$ pi
 
 This is not a tie-breaking artefact. The weights are initialised from $\mathcal{N}(0, 0.01^2)$ precisely to give different actions different initial $Q$-values, and three seeds with different initial $W$ still converge to the same single-action policy. The fixed point is robust to initialisation. The reason is representational: the linear functional form $Q(s,a) = W[a] \cdot x + b[a]$ cannot express the multi-modal optimal policy of this MDP, and under the bootstrapped target the linear fit settles on the constant policy that is closest to optimal in mean-return terms. Section \ref{sec:evaluation-A} provides the analytical justification: the always-action-0 policy reaches 92\% of $J^*$ on the clean MDP, so the TD updates have weak incentive to escape it.
 
-\paragraph{DQN learns a non-degenerate policy but does not converge.} The DQN curve oscillates between 0.54 and 0.64 across the full 150{,}000-step budget without settling. The across-seed band stays wide. This matches DQN's documented behaviour with bootstrapped targets and replay on small networks; longer training, soft target updates, or a smaller learning rate could likely close the gap, but at the chosen budget DQN underperforms its potential. The deployed model is the per-seed best snapshot rather than the final one, captured by the evaluation callback.
+\paragraph{DQN learns a non-degenerate policy with reduced oscillation after tuning.} The tuned DQN curve oscillates within roughly 0.55 to 0.65 across the 300{,}000-step budget, but the dynamics are visibly smoother than the original 150{,}000-step run at default hyperparameters. The mean snapshot return shows a clear upward trend after the first 100{,}000 steps and ends at $\sim 0.62$ across three seeds. Soft target updates and the five-times-smaller learning rate together remove a major source of training instability. The deployed best-snapshot model reaches 68.1\% survival and mean return 0.640, compared to 67.4\% and 0.608 at the original 150{,}000-step setup.
 
-\Cref{tab:configB-results} reports the Configuration B comparison. Mean returns rank Linear-Q (0.666) above DQN (0.608) above random (0.559), while survival ranks DQN (67.4\%) above Linear-Q (66.6\%) above random (65.0\%). The two metrics disagree.
+\Cref{tab:configB-results} reports the Configuration B comparison. Mean returns rank Linear-Q (0.666) above DQN (0.640) above random (0.559), while survival ranks DQN (68.1\%) above Linear-Q (66.6\%) above random (65.0\%). The two metrics still disagree, but the gap narrowed once DQN was properly tuned.
 
 \begin{table}[!htbp]
 \centering
@@ -110,7 +110,7 @@ Algorithm & Mean return $\pm$ std & Survival \% [95\% CI] & Mean episode length 
 \midrule
 Random   & $0.559 \pm 0.477$ & $65.0$ $[61.9, 68.2]$ & $9.2$ & n/a \\
 Linear-Q & $0.666 \pm 0.472$ & $66.6$ $[63.7, 69.7]$ & $9.3$ & $40{,}000$ steps \\
-DQN      & $0.608 \pm 0.469$ & $67.4$ $[64.3, 70.1]$ & $9.3$ & not reached \\
+DQN      & $0.640 \pm 0.467$ & $68.1$ $[65.2, 70.8]$ & $9.3$ & not reached \\
 \bottomrule
 \end{tabular}
 \caption{Configuration B: per-agent performance on the clinical environment (1{,}000 evaluation episodes, fixed seed 42).}
@@ -163,7 +163,7 @@ VI policy on clinical env (oracle)        & tabular policy, deployed       & $0.
 Q-Learning policy on clinical env (oracle) & tabular policy, deployed       & $0.645$ & $72.3$ \\
 SARSA policy on clinical env (oracle)      & tabular policy, deployed       & $0.640$ & $70.4$ \\
 Linear-Q (Config B)                       & linear function approximation  & $0.666$ & $66.6$ \\
-DQN (Config B)                            & deep function approximation    & $0.608$ & $67.4$ \\
+DQN (Config B)                            & deep function approximation    & $0.640$ & $68.1$ \\
 \bottomrule
 \end{tabular}
 \caption{Configuration A vs B comparison. The four oracle rows allow a three-way decomposition: wrapper cost ($\sim 0.3$ pp), algorithm-quality gap ($\sim 6$ pp from VI to Q-Learning tabular policy on the same clinical env), and observation-regime cost ($\sim 5$ pp from Q-Learning tabular to DQN function approximation).}
@@ -177,6 +177,6 @@ DQN (Config B)                            & deep function approximation    & $0.
 \label{fig:comparison}
 \end{figure}
 
-The expanded bridge experiment decomposes the gap from VI on clean to DQN on clinical (11.4 pp) into three measurable parts. The wrapper cost is 0.3 pp, all of it the irreducible acute-event tax: VI's sparse "no-fluid" policy is robust to observation corruption because its action choices do not depend on the noisy observations the wrappers modify. The algorithm-quality gap is 6.2 pp: Q-Learning's tabular policy deployed on the clinical env reaches only 72.3\% survival, 6.2 pp below the VI oracle on the same env. The observation-regime cost is 4.9 pp: DQN at 67.4\% sits below Q-Learning tabular at 72.3\% by exactly that gap, despite running on the same MDP. Q-Learning and SARSA tabular policies lose 4.5 and 3.9 pp respectively going from clean to clinical, an order of magnitude more than VI loses. Their diffuse action distributions interact differently with episodic termination than VI's sparse policy does.
+The expanded bridge experiment decomposes the gap from VI on clean to tuned DQN on clinical (10.7 pp) into three measurable parts. The wrapper cost is 0.3 pp, all of it the irreducible acute-event tax: VI's sparse "no-fluid" policy is robust to observation corruption because its action choices do not depend on the noisy observations the wrappers modify. The algorithm-quality gap is 6.2 pp: Q-Learning's tabular policy deployed on the clinical env reaches only 72.3\% survival, 6.2 pp below the VI oracle on the same env. The observation-regime cost is 4.2 pp: tuned DQN at 68.1\% sits below Q-Learning tabular at 72.3\% by exactly that gap, despite running on the same MDP. Q-Learning and SARSA tabular policies lose 4.5 and 3.9 pp respectively going from clean to clinical, an order of magnitude more than VI loses. Their diffuse action distributions interact differently with episodic termination than VI's sparse policy does.
 
 The decomposition tightens the original argument. The clinical wrappers are not what the Configuration B agents are struggling against. The dominant Configuration B cost is split between the algorithm-quality gap (which would exist on any policy below VI's optimum) and the observation regime (which is unavoidable when only raw features are available). Algorithm-class choice should follow the observation model, but even with perfect tabular policies, the wrapper-induced robustness gap (4--5 pp for model-free TD vs 0.3 pp for VI) is itself a non-trivial cost worth measuring.
