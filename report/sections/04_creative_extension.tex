@@ -11,7 +11,7 @@ The literature on safe and risk-sensitive RL is extensive~\citep{garcia2015safe,
 
 The choice has three properties that justified it over alternatives. First, it drops cleanly into the existing infrastructure: the change is a single branch in the terminal target. Second, evaluation still uses the unmodified reward, so survival and the original return distribution are read without contamination. Third, $\beta$ is interpretable as the currency of an avoided death relative to a survival reward of $+1$; $\beta = 1$ says "one death is worth one foregone survival", $\beta = 2$ says "one death is worth two foregone survivals". Stakeholders can argue about the value; the algorithm just computes the resulting policy.
 
-The sweep covers $\beta \in \{0, 0.5, 1.0, 2.0\}$, one seed, 100{,}000 episodes per $\beta$, with the same $\alpha$ and $\epsilon$ schedule as the main Q-Learning of \Cref{sec:methodology-A}. The single-seed and reduced-budget design make this sweep a clean Pareto-frontier illustration rather than a statistical claim about $\beta$ sensitivity; multi-seed replication is listed as future work.
+The sweep covers $\beta \in \{0, 0.5, 1.0, 2.0\}$, five seeds per $\beta$, 100{,}000 episodes per (seed, $\beta$) configuration, with the same $\alpha$ and $\epsilon$ schedule as the main Q-Learning of \Cref{sec:methodology-A}. All reported numbers are means $\pm$ standard deviations across the five seeds.
 
 \subsection{Results}
 
@@ -20,17 +20,17 @@ The sweep covers $\beta \in \{0, 0.5, 1.0, 2.0\}$, one seed, 100{,}000 episodes 
 \begin{table}[!htbp]
 \centering
 \small
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrrrr}
 \toprule
-$\beta$ & Survival \% & Mean return & 5\%-quantile return & Analytical $J(\pi)$ & Mean episode length \\
+$\beta$ & Survival \% & Mean return & 5\%-quantile return & Analytical $J(\pi)$ \\
 \midrule
-$0.0$ & $72.5$ & $0.643$ & $-0.103$ & $0.672$ & $9.9$ \\
-$0.5$ & $74.4$ & $0.653$ & $-0.120$ & $0.682$ & $10.6$ \\
-$1.0$ & $74.6$ & $0.648$ & $-0.128$ & $0.682$ & $10.7$ \\
-$2.0$ & $76.6$ & $0.662$ & $-0.118$ & $0.685$ & $11.2$ \\
+$0.0$ & $72.8 \pm 1.1$ & $0.645 \pm 0.011$ & $-0.110 \pm 0.013$ & $0.676 \pm 0.003$ \\
+$0.5$ & $75.5 \pm 0.6$ & $0.663 \pm 0.006$ & $-0.110 \pm 0.017$ & $0.681 \pm 0.004$ \\
+$1.0$ & $75.0 \pm 0.5$ & $0.651 \pm 0.004$ & $-0.130 \pm 0.007$ & $0.681 \pm 0.002$ \\
+$2.0$ & $76.2 \pm 0.8$ & $0.657 \pm 0.007$ & $-0.124 \pm 0.009$ & $0.685 \pm 0.005$ \\
 \bottomrule
 \end{tabular}
-\caption{Risk-sensitive Q-Learning sweep across $\beta \in \{0, 0.5, 1, 2\}$ (1{,}000 evaluation episodes per row, evaluation uses the unmodified reward).}
+\caption{Risk-sensitive Q-Learning sweep across $\beta \in \{0, 0.5, 1, 2\}$, five seeds per $\beta$ (mean $\pm$ standard deviation; 1{,}000 evaluation episodes per seed, evaluation uses the unmodified reward).}
 \label{tab:risk-results}
 \end{table}
 
@@ -41,13 +41,13 @@ $2.0$ & $76.6$ & $0.662$ & $-0.118$ & $0.685$ & $11.2$ \\
 \label{fig:risk-metrics}
 \end{figure}
 
-Three findings stand out. First, survival rises monotonically with $\beta$, from 72.5\% to 76.6\%, an improvement of 4.1 percentage points. The $\beta = 0$ baseline matches the single-seed 100{,}000-episode Q-Learning in \Cref{sec:evaluation-A}, and $\beta = 2$ lands within 2 percentage points of the 200{,}000-episode three-seed pooled survival (76.1\%) using half the training budget.
+Three findings stand out. First, survival rises with $\beta$ but with overlapping standard deviations between adjacent $\beta$ values. The total improvement from $\beta = 0$ to $\beta = 2$ is 3.4 percentage points ($72.8\% \pm 1.1$ to $76.2\% \pm 0.8$). The $\beta = 0$ baseline matches the 100{,}000-episode single-seed Q-Learning, and the $\beta = 2$ result lands within 0.1 pp of the 200{,}000-episode three-seed pooled Q-Learning survival (76.1\%) using half the training budget per seed.
 
-Second, mean return also rises with $\beta$, from 0.643 to 0.662. The standard expectation would be "more risk aversion costs mean reward"; here the opposite happens because the $\lambda$-intensity penalty is small relative to the death-versus-survival gap. Trading more treatment cost for more survival is positive-sum at $\lambda = 0.02$.
+Second, mean return is non-monotonic. The single-seed pilot suggested monotonic growth; the five-seed sweep shows that $\beta = 0.5$ achieves the highest mean return ($0.663 \pm 0.006$) and survival ($75.5 \pm 0.6$\%) within 0.7 percentage points of the $\beta = 2$ survival peak. $\beta = 1$ dips slightly in mean return before recovering at $\beta = 2$. The Pareto-optimal risk setting under this design is the middle of the range, not the extreme; $\beta = 0.5$ delivers most of the survival gain at lower training-time variance and highest mean return.
 
-Third, the 5\%-quantile of returns barely moves across $\beta$, hovering between $-0.10$ and $-0.13$. Worst-case returns are dominated by acute-event deaths (7.9\% of episodes, all returning 0 minus accrued intensity penalty) plus the unlucky-and-treated death tail. Both depend on the patient's acute-event draw, not on the policy. Risk shaping shifts the centre of the return distribution without buying tail safety.
+Third, the 5\%-quantile of returns is stable across $\beta$, hovering between $-0.11$ and $-0.13$ with standard deviations around $\pm 0.01$. Worst-case returns are dominated by acute-event deaths (7.9\% of episodes, all returning 0 minus accrued intensity penalty) and by the unlucky-and-treated death tail. Both depend on the patient's acute-event draw, not on the policy. Risk shaping shifts the centre of the return distribution without buying tail safety.
 
-Episode length lengthens with $\beta$: 9.9 to 11.2 steps. The risk-averse agent treats longer, accepting intensity cost in exchange for survival upside.
+Episode length lengthens with $\beta$ from $10.0 \pm 0.2$ to $11.4 \pm 0.1$ steps. The risk-averse agent treats longer, accepting intensity cost in exchange for survival upside.
 
 \begin{figure}[!htbp]
 \centering
@@ -60,8 +60,10 @@ The $\beta = 2$ heatmap moves clearly toward the Configuration A Value Iteration
 
 \subsection{Interpretation and what the extension adds}
 
-Two interpretations follow from the data. First, the $\lambda$-intensity penalty in the standard reward design is doing more work than expected. It suppresses treatment so aggressively that even the standard Q-Learning policy lands below the survival-maximising frontier. Adding a death penalty pushes the agent back toward "treat more, even if it costs intensity," surfacing a tension between $\lambda$ and the death-versus-survival gap that the original reward design hid. A cleaner design might re-tune $\lambda$ rather than add $\beta$; the extension makes the trade-off explicit so that choice can be made deliberately.
+Three interpretations follow from the data. First, the $\lambda$-intensity penalty in the standard reward design is doing more work than expected. It suppresses treatment so aggressively that even the standard Q-Learning policy lands below the survival-maximising frontier. Adding a death penalty pushes the agent back toward "treat more, even if it costs intensity," surfacing a tension between $\lambda$ and the death-versus-survival gap that the original reward design hid. A cleaner design might re-tune $\lambda$ rather than add $\beta$; the extension makes the trade-off explicit so that choice can be made deliberately.
 
-Second, risk-sensitive Q-learning in this MDP improves the centre of the distribution (mean and survival) without improving the tail. If tail safety is the goal, the right intervention is robustness to acute events, not Lagrangian shaping. The extension shows the limits of risk shaping in environments where worst-case outcomes are dominated by exogenous shocks rather than by the policy's action choices.
+Second, the Pareto frontier has a clinically attractive sweet spot at $\beta = 0.5$. It delivers most of the survival gain (75.5\% vs 76.2\% at $\beta = 2$), the highest mean return of the four settings, and shorter episodes than $\beta = 2$. For deployment, $\beta = 0.5$ is a more defensible choice than the survival-maximising extreme.
+
+Third, risk-sensitive Q-learning in this MDP improves the centre of the distribution (mean and survival) without improving the tail. If tail safety is the goal, the right intervention is robustness to acute events, not Lagrangian shaping. The extension shows the limits of risk shaping in environments where worst-case outcomes are dominated by exogenous shocks rather than by the policy's action choices.
 
 What the extension adds to the rest of the report is methodological. Every other algorithm in this work (Value Iteration, Q-Learning, SARSA, Linear-Q, DQN) optimises expectation; the risk-sensitive variant places the policy on a different point of the survival-versus-intensity trade-off without changing the environment, the action space, or the algorithm class. The same Bellman recursion is now solving a different question, and the question turns out to matter: the choice of objective affects the policy as much as the choice of approximator.

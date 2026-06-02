@@ -158,13 +158,15 @@ The oracle achieves 78.5\% survival on the clinical environment, only 0.3 percen
 \toprule
 Setting & Method class & Mean return & Survival \% \\
 \midrule
-VI (Config A, clean discrete state) & tabular DP                  & $0.751$ & $78.8$ \\
-VI policy on clinical env (oracle)  & tabular policy, deployed     & $0.749$ & $78.5$ \\
-Linear-Q (Config B)                 & linear function approximation & $0.666$ & $66.6$ \\
-DQN (Config B)                      & deep function approximation   & $0.608$ & $67.4$ \\
+VI (Config A, clean discrete state)       & tabular DP                    & $0.751$ & $78.8$ \\
+VI policy on clinical env (oracle)        & tabular policy, deployed       & $0.749$ & $78.5$ \\
+Q-Learning policy on clinical env (oracle) & tabular policy, deployed       & $0.645$ & $72.3$ \\
+SARSA policy on clinical env (oracle)      & tabular policy, deployed       & $0.640$ & $70.4$ \\
+Linear-Q (Config B)                       & linear function approximation  & $0.666$ & $66.6$ \\
+DQN (Config B)                            & deep function approximation    & $0.608$ & $67.4$ \\
 \bottomrule
 \end{tabular}
-\caption{Configuration A vs B comparison. The oracle row isolates the wrapper cost (0.3 pp) from the function-approximation cost ($\sim$11 pp).}
+\caption{Configuration A vs B comparison. The four oracle rows allow a three-way decomposition: wrapper cost ($\sim 0.3$ pp), algorithm-quality gap ($\sim 6$ pp from VI to Q-Learning tabular policy on the same clinical env), and observation-regime cost ($\sim 5$ pp from Q-Learning tabular to DQN function approximation).}
 \label{tab:comparison-AB}
 \end{table}
 
@@ -175,4 +177,6 @@ DQN (Config B)                      & deep function approximation   & $0.608$ & 
 \label{fig:comparison}
 \end{figure}
 
-The decomposition argues that the clinical wrappers are not what the Configuration B agents are struggling against. The real cost is the observation regime: the best learning agent (DQN, 67.4\%) sits 11.1 percentage points below the oracle (78.5\%), and that entire gap comes from having to read a noisy partially observed 47-dimensional vector and generalise across states the agent never sees twice. The wrapper-to-observation-cost ratio is roughly 37:1 in favour of observation cost. Algorithm-class choice should follow the observation model, and the cost of moving from a tabular method to deep RL is measurable, non-zero, and worth quantifying for any deployment decision.
+The expanded bridge experiment decomposes the gap from VI on clean to DQN on clinical (11.4 pp) into three measurable parts. The wrapper cost is 0.3 pp, all of it the irreducible acute-event tax: VI's sparse "no-fluid" policy is robust to observation corruption because its action choices do not depend on the noisy observations the wrappers modify. The algorithm-quality gap is 6.2 pp: Q-Learning's tabular policy deployed on the clinical env reaches only 72.3\% survival, 6.2 pp below the VI oracle on the same env. The observation-regime cost is 4.9 pp: DQN at 67.4\% sits below Q-Learning tabular at 72.3\% by exactly that gap, despite running on the same MDP. Q-Learning and SARSA tabular policies lose 4.5 and 3.9 pp respectively going from clean to clinical, an order of magnitude more than VI loses. Their diffuse action distributions interact differently with episodic termination than VI's sparse policy does.
+
+The decomposition tightens the original argument. The clinical wrappers are not what the Configuration B agents are struggling against. The dominant Configuration B cost is split between the algorithm-quality gap (which would exist on any policy below VI's optimum) and the observation regime (which is unavoidable when only raw features are available). Algorithm-class choice should follow the observation model, but even with perfect tabular policies, the wrapper-induced robustness gap (4--5 pp for model-free TD vs 0.3 pp for VI) is itself a non-trivial cost worth measuring.
