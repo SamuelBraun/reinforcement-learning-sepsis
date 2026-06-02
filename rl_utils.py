@@ -47,7 +47,7 @@ def make_clinical_env_quiet():
 def evaluate_policy(pi, n_episodes=1000, seed=SEED):
     """Monte-Carlo evaluation of a deterministic policy pi (shape (N_STATES,))
     on the fixed 1000-episode seed set. Returns (returns, lengths) arrays."""
-    env_eval = make_sepsis_env()
+    env_eval = make_sepsis_env(quiet=True)
     np.random.seed(seed)
     returns = []
     lengths = []
@@ -144,7 +144,7 @@ def evaluate_tabular_on_clinical(pi, n_episodes=1000, seed=SEED):
 
 def run_random_baseline(n_episodes=1000, seed=SEED):
     np.random.seed(seed)
-    env_eval = make_sepsis_env()
+    env_eval = make_sepsis_env(quiet=True)
     env_eval.action_space.seed(seed)
     returns = []
     lengths = []
@@ -285,7 +285,7 @@ def plot_learning_curve(runs, color, label, fname, baseline, plots_dir, show_eps
 # Policy interpretability
 
 def policy_action_counts(pi, n_episodes=500, seed=SEED):
-    env_p = make_sepsis_env()
+    env_p = make_sepsis_env(quiet=True)
     counts = np.zeros((5, 5), dtype=float)
     rng_local = np.random.default_rng(seed)
     for _ in range(n_episodes):

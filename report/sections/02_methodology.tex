@@ -1,0 +1,42 @@
+\section{Methodology}
+\label{sec:methodology}
+
+This section describes the algorithm choices for each configuration and the hyperparameters under which they were trained. The argument throughout is that the algorithm should follow the observation model: tabular methods when the discrete state is available, function approximation when only the raw physiological vector is.
+
+\subsection{Configuration A: tabular methods}
+\label{sec:methodology-A}
+
+Configuration A exposes a 716-state discrete index. The Q-table has shape $716 \times 25 = 17{,}900$ entries, small enough to store and to update directly. The transition tensor $P$ and reward matrix $R$ are also directly available, so the optimal policy can be computed analytically without sampling. Three algorithms were applied.
+
+\paragraph{Value Iteration (VI).} The model-based reference. The standard Bellman optimality backup
+\begin{equation}
+V_{k+1}(s) = \max_a \big[ R(s,a) + \gamma \sum_{s'} P(s' \mid s, a)\, V_k(s') \big]
+\end{equation}
+runs to convergence with tolerance $\|V_{k+1} - V_k\|_\infty < 10^{-10}$. VI's converged policy $\pi_\text{VI}$ is the optimal reference against which every model-free agent is measured. VI also provides a closed-form policy evaluation: for any deterministic policy $\pi$ the expected return $J(\pi) = d_0 \cdot V_\pi$ is the solution of the linear system $(I - \gamma P_\pi) V_\pi = R_\pi$ over the non-terminal states, computed without rollouts. This sampling-noise-free $J(\pi)$ is the metric for the optimality-gap analysis in \Cref{sec:evaluation-A}.
+
+\paragraph{Q-Learning.} Off-policy temporal-difference learning~\citep{watkins1992qlearning,sutton2018reinforcement}, included to validate that an agent without access to $P$ and $R$ can recover the model-based optimum from samples alone. The update is
+\begin{equation}
+Q(s,a) \leftarrow Q(s,a) + \alpha \big[ r + \gamma \max_{a'} Q(s', a') - Q(s,a) \big],
+\end{equation}
+with a constant step size $\alpha = 0.1$ and $\epsilon$-greedy exploration following a linear decay from $\epsilon = 1.0$ to $\epsilon = 0.05$ over the first 80\% of training. Training runs for 200{,}000 episodes per seed across three seeds (0, 1, 2) so that mean and across-seed standard deviation are both reported.
+
+\paragraph{SARSA.} The on-policy counterpart of Q-Learning~\citep{rummery1994sarsa,sutton2018reinforcement}. The update differs only in the bootstrap target: SARSA uses the value of the action the agent actually samples under its $\epsilon$-greedy policy at the next state, rather than the maximum over actions:
+\begin{equation}
+Q(s,a) \leftarrow Q(s,a) + \alpha \big[ r + \gamma Q(s', a') - Q(s,a) \big].
+\end{equation}
+Hyperparameters and seeds are identical to Q-Learning so that the two algorithms are directly comparable. The substantive difference is that SARSA learns the value of the policy it actually executes, including its exploratory moves, while Q-Learning learns the value of the greedy policy independent of exploration. Whether that distinction translates into a safer or better policy in this MDP is an empirical question; \Cref{sec:evaluation-A} reports the answer.
+
+\paragraph{Exploration design.} A separate sweep in the notebook (Section A.6) compares five $\epsilon$ regimes at a 50{,}000-episode budget: pure exploit ($\epsilon = 0$), pure random ($\epsilon = 1$), fixed $\epsilon = 0.3$, decay to $0.05$, and decay to $0.01$. The sweep is included because the cost of the exploration design is non-trivial in this MDP; \Cref{sec:evaluation-A} reports the surprising ordering.
+
+\subsection{Configuration B: function approximation}
+\label{sec:methodology-B}
+
+Configuration B exposes the 47-dimensional physiological feature vector and adds three episodic wrappers. A Q-table is no longer possible: the agent never observes the exact same vector twice. Two algorithms with the same Q-learning target but different approximators were applied. The pairing isolates a single variable, the representation of $Q$.
+
+\paragraph{Linear Q-learning.} Semi-gradient TD with a linear approximator $Q(s,a) = W[a] \cdot x + b[a]$, where $x$ is the 47-dimensional observation and $W[a] \in \mathbb{R}^{47}$, $b[a] \in \mathbb{R}$ are per-action weights and bias. The update is the standard semi-gradient form $W[a] \mathrel{+}= \alpha \cdot \text{TD}(s,a) \cdot x$ and $b[a] \mathrel{+}= \alpha \cdot \text{TD}(s,a)$. Step size $\alpha = 0.01$, 150{,}000 environment steps per seed across three seeds, $\epsilon$-decay $1.0 \to 0.05$ over 80\% of training. Weights are initialised from $\mathcal{N}(0, 0.01^2)$ rather than zero to give different actions different initial $Q$-values; \Cref{sec:evaluation-B} reports that this initialisation choice turned out not to matter.
+
+\paragraph{DQN.} The same Q-learning target represented by a multi-layer perceptron with experience replay and a periodically refreshed target network~\citep{mnih2015dqn}. The implementation is \texttt{stable-baselines3}'s \texttt{DQN("MlpPolicy")}~\citep{raffin2021sb3}. Hyperparameters are: learning rate $5 \times 10^{-4}$, batch size 64, replay buffer 100{,}000, learning starts after 1{,}000 steps, target network updated every 1{,}000 steps, $\epsilon$ decays over the first 20\% of training to a floor of 0.05. The choices match SB3 defaults for low-dimensional MLP policies; the buffer is sized to cover the full training horizon, so the replay distribution is non-stationary only on the policy axis.
+
+\paragraph{Why these two and not PPO or DDPG.} The action space is discrete (25 actions), so DDPG and other continuous-action algorithms are not applicable without further encoding. PPO was implemented in an earlier iteration but removed: a policy-gradient on-policy method changes more than one variable at once relative to Configuration A's Q-Learning, so its results would not cleanly answer the question of whether the deep representation buys behaviour. The Linear-Q versus DQN comparison holds the Q-learning target fixed and varies only the approximator class, which is the comparison the Configuration B section needs.
+
+\paragraph{Evaluation protocol.} Every reported number uses the same fixed evaluation procedure: 1{,}000 episodes with a fixed random seed (42), $\epsilon = 0$ greedy action selection. Survival rate is reported with bootstrap 95\% confidence intervals over 1{,}000 resamples of the episode set. Mean return is reported with the sample standard deviation. The Configuration A optimality ratio additionally uses the analytical $J(\pi)$ from VI's linear solve, which has no sampling noise.

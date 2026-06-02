@@ -38,7 +38,7 @@ LAM       = 0.02  # treatment intensity penalty (parsimony pressure)
 
 #  Environment factory 
 
-def make_sepsis_env(sofa_bias: float = SOFA_BIAS, lam: float = LAM):
+def make_sepsis_env(sofa_bias: float = SOFA_BIAS, lam: float = LAM, quiet: bool = False):
     """
     Build the ICU-Sepsis-v2 environment with configuration:
 
@@ -46,6 +46,10 @@ def make_sepsis_env(sofa_bias: float = SOFA_BIAS, lam: float = LAM):
                     (higher SOFA score at episode start). Default 5.0.
         lam       : treatment intensity penalty subtracted from each reward step.
                     Encourages parsimonious treatment. Default 0.02.
+        quiet     : suppress the per-call print lines. Default False (legacy
+                    behaviour). Training loops that call this factory many
+                    times should pass quiet=True to avoid flooding the
+                    notebook's cell output.
 
 
     Returns a gymnasium env with the modified reward and initial-state matrices.
@@ -60,7 +64,8 @@ def make_sepsis_env(sofa_bias: float = SOFA_BIAS, lam: float = LAM):
     if lam > 0.0:
         for a in range(A):
             R_new[:, a, :] -= lam * INTENSITY[a]
-        print(f'make_sepsis_env | lam={lam} → intensity penalty active')
+        if not quiet:
+            print(f'make_sepsis_env | lam={lam} → intensity penalty active')
 
     # Shift initial-state distribution toward sicker patients
     sofa   = raw._sofa_scores.flatten()
@@ -73,7 +78,8 @@ def make_sepsis_env(sofa_bias: float = SOFA_BIAS, lam: float = LAM):
         d0_new         = np.zeros(S)
         d0_new[:S - 2] = weight
         mean_sofa = float(np.average(sofa_clinical, weights=weight))
-        print(f'make_sepsis_env | sofa_bias={sofa_bias} → mean start SOFA: {mean_sofa:.2f}')
+        if not quiet:
+            print(f'make_sepsis_env | sofa_bias={sofa_bias} → mean start SOFA: {mean_sofa:.2f}')
 
     raw._r_mat = R_new
     raw._d_0   = d0_new
