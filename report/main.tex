@@ -85,12 +85,12 @@
 
     {\large
     \begin{tabular}{c}
-        \textbf{Group X}\\[12pt]
-        Samuel Braun, 20250487\\
-        Paul Harnos, 20250487\\
-        Author 3, Student ID\\
-        Author 4, Student ID\\
-        Author 5, Student ID\\
+        \textbf{Group \textcolor{red}{[N]}}\\[12pt]
+        Carolina Luz, 20250409\\
+        Lukas Belser, 20250338\\
+        Margarida Quintino, 20250411\\
+        Pal Harnos, 20250487\\
+        Samuel Braun, 20250355\\
     \end{tabular}
     \par}
 
@@ -113,7 +113,7 @@
 
 % Abstract on its own opening page
 \begin{abstract}\noindent
-This project develops and compares reinforcement learning agents on the ICU-Sepsis-v2 benchmark, a Markov Decision Process fitted to MIMIC-III patient trajectories. Two configurations expose the same underlying MDP through different observation models: a discrete 716-state index amenable to tabular methods, and a 47-dimensional continuous physiological vector wrapped in three clinical-reality failure modes that forces function approximation. Value Iteration achieves 78.8\% survival under fixed cohort difficulty (SOFA bias 5.0, $\lambda = 0.02$ intensity penalty). Q-Learning and SARSA reach 76.1\% and 74.3\% respectively, both indistinguishable at an optimality ratio of 0.877 across three training seeds. The function-approximation agents perform sharply worse: Linear Q-learning collapses to a degenerate single-action policy at 66.6\% survival, while DQN reaches 67.4\% with a clinically sensible SOFA-responsive policy. A bridge experiment deploys the optimal tabular policy on the clinical environment, isolating the irreducible 0.3 percentage-point cost of the acute-event wrapper from the 11.1 percentage-point cost of learning from raw observations. A creative extension introduces risk-sensitive Q-Learning via a Lagrangian death penalty $\beta$, which raises survival from 72.5\% at $\beta=0$ to 76.6\% at $\beta=2$ while leaving the 5\%-quantile of returns unchanged. The findings argue that algorithm class should follow the observation model, and that the standard expected-return objective hides a meaningful tension between treatment intensity and survival in this MDP.
+This project develops and compares reinforcement learning agents on the ICU-Sepsis-v2 benchmark, a Markov Decision Process fitted to MIMIC-III patient trajectories. Two configurations expose the same underlying MDP through different observation models: a discrete 716-state index amenable to tabular methods, and a 47-dimensional continuous physiological vector wrapped in three clinical-reality failure modes that forces function approximation. Value Iteration achieves 78.8\% survival under fixed cohort difficulty (SOFA bias 5.0, $\lambda = 0.02$ intensity penalty). Q-Learning and SARSA reach 76.1\% and 74.3\% respectively, both indistinguishable at an optimality ratio of 0.877 across three training seeds. The function-approximation agents perform sharply worse: both naive and Random-Fourier-Feature Linear-Q collapse to single-action policies at 66.6\% and 66.7\% survival, while tuned DQN reaches 68.1\% with a clinically sensible SOFA-responsive policy. A bridge experiment deploys VI, Q-Learning, and SARSA tabular policies on the clinical environment, decomposing the 10.7 percentage-point Configuration B gap into 0.3 pp wrapper cost, 6.2 pp algorithm-quality gap, and 4.2 pp observation-regime cost. A creative extension introduces risk-sensitive Q-Learning via a Lagrangian death penalty $\beta$ across five seeds per $\beta$, finding a Pareto-attractive sweet spot at $\beta = 0.5$ (75.5\% survival, highest mean return) while leaving the 5\%-quantile of returns unchanged. The findings argue that algorithm class should follow the observation model, and that the standard expected-return objective hides a meaningful tension between treatment intensity and survival in this MDP.
 \end{abstract}
 
 \input{sections/01_introduction}
