@@ -1,39 +1,36 @@
+# Virtual environments
+.venv/
+.venv_*/
+venv/
+
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-.Python
-
-# Virtual environments
-.venv/
-venv/
-env/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# macOS
+# Secrets
+.env
+
+# Data (not redistributed)
+data/
+wikiart/
+
+# Model artefacts and caches
+models/
+outputs/models/
+*.keras
+*.h5
+*.npy
+
+# OS / editor
 .DS_Store
+.vscode/
+.idea/
 
-# Backups and editor swap files
-*.bak
-*~
-*.swp
-
-# LaTeX build artifacts
-report/*.aux
-report/*.log
-report/*.toc
-report/*.out
-report/*.bbl
-report/*.blg
-report/*.fdb_latexmk
-report/*.fls
-report/*.synctex.gz
-*.aux
-*.log
-*.toc
-*.out
-*.bbl
-*.blg
+# Assistant tooling
+.claude/
+.CLAUDE/
+CLAUDE.md

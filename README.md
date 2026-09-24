@@ -1,81 +1,70 @@
-# RL Group Project — ICU Sepsis Treatment
+# Reinforcement Learning for Sepsis Treatment in the ICU
 
-NOVA IMS Reinforcement Learning course group project. Trains and compares
-tabular and deep RL agents on the `ICU-Sepsis-v2` benchmark from Komorowski
-et al. (2018), then extends the standard expected-return objective with a
-risk-sensitive (CVaR-style) variant.
+Tabular and deep reinforcement learning on the ICU-Sepsis environment: learning a
+vasopressor and IV-fluid policy for septic patients, where the clinician is the policy,
+the patient's evolving physiology is the state, and survival is a delayed terminal
+reward. Course project for Reinforcement Learning, M.Sc. Data Science and Advanced
+Analytics, NOVA IMS, 2025/2026.
 
-The single deliverable is [`rl_sepsis_project.ipynb`](rl_sepsis_project.ipynb).
-Generated figures land in [`plots/`](plots/). The assignment brief is in
-[`project_description/RL Project.pdf`](project_description/RL%20Project.pdf).
+The MDP has **716 states** (714 clinical plus survival and death) and **25 actions**
+(5 vasopressor levels × 5 IV-fluid levels). The reward is sparse: +1 on survival, 0
+otherwise, with an intensity penalty λ = 0.02 per step.
 
-## Setup
+## Results
 
-Python 3.11 or 3.12. The deps are pure pip (no system packages required).
+Survival rate under fixed cohort difficulty (SOFA bias 5.0, λ = 0.02):
 
-```bash
-python3.11 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-```
+| Method | Observation model | Survival |
+|---|---|---|
+| Value Iteration (analytic optimum) | tabular | 78.8% |
+| Q-Learning | tabular | 76.1% |
+| SARSA | tabular | 74.3% |
+| DQN (tuned) | feature-based | 68.1% |
+| Linear-Q | feature-based | 66.7% |
 
-## Run
+The headline finding is that **algorithm class should follow the observation model**.
+With the full transition tensor available, tabular methods come close to the analytic
+optimum; the feature-based approximators collapse to single-action policies unless
+carefully tuned, and only the tuned DQN recovers a clinically sensible, SOFA-responsive
+policy.
 
-End-to-end notebook execution (writes outputs back in place):
+A bridge experiment deploys the tabular policies on the clinical environment and
+decomposes where the transfer loss comes from.
 
-```bash
-.venv/bin/jupyter nbconvert --to notebook --execute --inplace \
-  --ExecutePreprocessor.timeout=1800 rl_sepsis_project.ipynb
-```
+### Creative extension: risk-sensitive Q-Learning
 
-Interactive (browser):
+Reformulating the objective with a Lagrangian death penalty β, across five seeds per β,
+finds a Pareto-attractive point at **β = 0.5 (75.5% survival, highest mean return)**
+while leaving the 5% quantile of returns unchanged. The standard expected-return
+objective turns out to hide a real tension between treatment intensity and survival in
+this MDP.
 
-```bash
-.venv/bin/jupyter notebook rl_sepsis_project.ipynb
-```
-
-Quick environment smoke test (Config A + Config B base, ~20 s):
-
-```bash
-.venv/bin/python -m envs.continuous_sepsis_env
-```
-
-## Notebook structure
-
-| Section | What it covers |
-|---|---|
-| 0. Setup | Imports, seeds, plot config |
-| 1. Explore environment | Discrete + clinical envs, random baselines, failure-mode breakdown |
-| 2. Config A (tabular) | Value Iteration, Q-Learning, SARSA, optimality-gap, policy interpretation, exploration-vs-exploitation sweep |
-| 3. Config B (function approximation) | Linear-Q, DQN, results table, action heatmaps, SOFA-stratified actions |
-| 4. Comparison A vs B | VI-policy-on-clinical-env oracle bound, observation-cost decomposition |
-| 5. Creative Extension | Risk-sensitive Q-Learning (Lagrangian death penalty, β-sweep) |
-
-## Reproducibility
-
-All seeds are set in the first cell (`SEED = 42`). Per-algorithm training
-seeds are explicit constants (`SEEDS = [0, 1, 2]` for Config A,
-`SEEDS_B = [0, 1, 2]` for Config B). Evaluation uses the fixed
-`evaluate_policy` and `evaluate_agent` helpers in
-[`rl_utils.py`](rl_utils.py) with 1,000 episodes per agent.
-
-Difficulty (`SOFA_BIAS = 5.0`, `LAM = 0.02`) is applied inside
-`make_sepsis_env()`; do not reach into the raw icu-sepsis env's
-`_r_mat` / `_d_0` directly.
-
-## Compute budget
-
-Full notebook execution takes ~30 min on a modern laptop (mostly DQN
-training in Config B). Set `CONFIGB_TOTAL_STEPS=10000` to run a fast smoke
-version.
+Full methodology, per-configuration results and the clinical caveats are in
+[report.pdf](report.pdf).
 
 ## Layout
 
 ```
-envs/                            # discrete + continuous envs, clinical wrappers
-project_description/             # assignment brief PDF
-plots/                           # generated figures
-rl_sepsis_project.ipynb  # the deliverable
-rl_utils.py                      # shared evaluation + plotting helpers
-requirements.txt                 # pinned deps
-.claude/                         # project style guides + run skill
+rl_sepsis_project.ipynb   Main notebook — reproduces every result
+rl_utils.py               Shared evaluation and plotting helpers
+envs/                     Custom ICU-Sepsis environments and wrappers
+plots/                    Figures generated by the notebook
+report.pdf                Project report
 ```
+
+## Reproduce
+
+```bash
+python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/jupyter notebook rl_sepsis_project.ipynb
+```
+
+## Caveat
+
+This is coursework on a simulator. A policy learned here would need substantial further
+validation before it had anything to say about bedside care.
+
+## Team
+
+Group project (5 people): Carolina Luz, Lukas Belser, Margarida Quintino, Paul Harnos,
+Samuel Braun.
